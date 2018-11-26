@@ -1,6 +1,9 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.IO;
+using System.Diagnostics;
+using System.Threading;
 
 
 public class SpawnHotspots : MonoBehaviour {
@@ -38,15 +41,26 @@ public class SpawnHotspots : MonoBehaviour {
 	public int itr = 0;					/* Keep track of list iterations */
 	public int trial = 0;					/* Keep track of completed trials */
 
+	public string fileName = "pointing_random_plane_task_time_";
+	public Stopwatch stopwatch = new Stopwatch();
+	public string path;
+
 	/* Use this for initialization */
 	void Start () {
 
+		// Create unique out file 
+		fileName = fileName + System.DateTime.Now + ".txt";
+		fileName = fileName.Replace("/","-");
+		fileName = fileName.Replace(":",";");
+		path = Path.Combine(Application.persistentDataPath, fileName);
+		//Test outfile
+		//File.WriteAllText(@path, "trace");
+		
 		/* Generate */
 		initializeCoordinates (ref order, ref coOrds_collection, ref coOrds_collection_1, ref coOrds_collection_2, ref coOrds_collection_3);
 
 		/* Call function once on startup to create initial hotspot */
 		HotSpotTriggerInstantiate ();
-	
 	}
 
 	/* Generate circular arrays of static points */ 
@@ -116,7 +130,7 @@ public class SpawnHotspots : MonoBehaviour {
 		coOrds_collection.Add(coOrds_collection_3);
 
 		/* Shuffle plane order */ 
-		Debug.Log("Plane order before shuffle: " + order[0] + order[1] + order[2]);
+		UnityEngine.Debug.Log("Plane order before shuffle: " + order[0] + order[1] + order[2]);
 		
 		for (i = 0; i < 3; i++) {
 			random_placeholder = i + Random.Range (0, 3 - i);
@@ -127,7 +141,7 @@ public class SpawnHotspots : MonoBehaviour {
 			order[random_placeholder] = temp;
 		}
 		
-		Debug.Log("Plane order after shuffle: " + order[0] + order[1] + order[2]);
+		UnityEngine.Debug.Log("Plane order after shuffle: " + order[0] + order[1] + order[2]);
 
 		/* Trial counters */ 
 		CoOrds counter_1 = new CoOrds (0.71f, 0.5f, 0.0f, null);
@@ -161,6 +175,12 @@ public class SpawnHotspots : MonoBehaviour {
 	/* Spawn trigger points until 3 planes are completed */
 	public void HotSpotTriggerInstantiate ()
 	{
+		/* check if user has tapped first point */
+		if (itr == 1) {
+			// Begin timing
+			stopwatch.Start();
+		}
+
 		CoOrds coords_temp = new CoOrds ();
 
 		/* Begin spawning */
@@ -175,6 +195,18 @@ public class SpawnHotspots : MonoBehaviour {
 
 		/* Spawn new plane and counter */
 		else if (++trial < 3) {
+
+			// Stop timing
+			System.TimeSpan ts = stopwatch.Elapsed;
+			stopwatch.Stop();
+			UnityEngine.Debug.Log("Time elapsed: " + ts);
+			stopwatch.Reset();
+
+			// Write time to file
+			File.AppendAllText(@path, "Trial " + trial + " : ");
+			File.AppendAllText(@path, ts.ToString());
+			File.AppendAllText(@path, "\r\n");
+
 			itr = 0;
 
 			/* Spawn trial counter */
@@ -217,7 +249,18 @@ public class SpawnHotspots : MonoBehaviour {
 
 		/* Spawn last trial counter */
 		else {
-			Debug.Log("All trials completed!");
+			// Stop timing
+			System.TimeSpan ts = stopwatch.Elapsed;
+			stopwatch.Stop();
+			UnityEngine.Debug.Log("Time elapsed: " + ts);
+			stopwatch.Reset();
+
+			// Write time to file
+			File.AppendAllText(@path, "Trial " + trial + " : ");
+			File.AppendAllText(@path, ts.ToString());
+			File.AppendAllText(@path, "\r\n");
+
+			UnityEngine.Debug.Log("All trials completed!");
 			coords_temp = counter_collection [trial - 1];
 			Instantiate (trial_counter, new Vector3 (coords_temp.x, coords_temp.y, coords_temp.z), Quaternion.identity);
 		}

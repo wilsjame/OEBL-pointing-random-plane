@@ -1,1 +1,7 @@
 **~
+Library/
+Temp/
+UnityPackageManager/
+*.swp
+*.csproj
+*.sln

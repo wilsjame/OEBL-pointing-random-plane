@@ -304,7 +304,11 @@ namespace HoloToolkit.Examples.InteractiveElements
                 }
                 else
                 {
-                    Label.text = Mathf.Round(SliderValue).ToString(LabelFormat);
+                    //Label.text = Mathf.Round(SliderValue).ToString(LabelFormat);
+
+                    /* Truncate float to two decimal places */
+                    //Debug.Log(SliderValue);
+                    Label.text = SliderValue.ToString("F2");
                 }
             }
         }
