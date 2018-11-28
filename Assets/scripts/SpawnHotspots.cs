@@ -220,6 +220,9 @@ public class SpawnHotspots : MonoBehaviour {
 	/* Spawn trigger points until 3 trials are completed */
 	public void HotSpotTriggerInstantiate ()
 	{
+		int i;
+		int temp;
+		int random_placeholder;
 		CoOrds coords_temp = new CoOrds ();
 
 		/* Check if user has tapped first point */
@@ -289,7 +292,17 @@ public class SpawnHotspots : MonoBehaviour {
 
 			// Do not time after third trial
 			if (trial < 3) {
-				//TODO shuffle planes before new trial
+
+				// Shuffle plane order before new trial 
+				for (i = 0; i < 3; i++) {
+					random_placeholder = i + Random.Range (0, 3 - i);
+
+					/* Swap */
+					temp = order[i];
+					order[i] = order[random_placeholder];
+					order[random_placeholder] = temp;
+				}
+				
 				plane = 0;
 				newPlane();
 				trial_stopwatch.Start();
