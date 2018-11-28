@@ -39,6 +39,7 @@ public class SpawnHotspots : MonoBehaviour {
 	List<CoOrds> counter_collection = new List<CoOrds> (); 	/* Trial counter coordinates */ 
 	public int[] order = {0, 1, 2};				/* Plane spawn order */
 	public int itr = 0;					/* Keep track of list iterations */
+	public int plane = 0;					/* Keep track of completed planes */
 	public int trial = 0;					/* Keep track of completed trials */
 
 	public string fileName = "pointing_random_plane_task_time_";
@@ -179,97 +180,112 @@ public class SpawnHotspots : MonoBehaviour {
 
 	}
 
-	/* Spawn trigger points until 3 planes are completed */
+	/* Destroy finished plane and spawn a new one */ 
+	public void newPlane ()
+	{
+		CoOrds coords_temp = new CoOrds ();
+		itr = 0;
+
+		/* Destroy completed plane */ 
+		GameObject[] completed = GameObject.FindGameObjectsWithTag ("static_sphere");
+
+		for (var i = 0; i < completed.Length; i++) {
+			Destroy(completed[i]);
+		}
+
+		/* Spawn new plane's static points */
+		for (int i = 0; i < coOrds_collection[order[plane]].Count; i++) {
+			coords_temp = coOrds_collection[order[plane]] [i];
+			Transform static_pt = Instantiate (static_point, new Vector3 (coords_temp.x, coords_temp.y, coords_temp.z), Quaternion.identity, this.transform); // Make this gameObject the parent
+
+		switch (coords_temp.plane) {
+			case "front":
+				static_pt.GetComponent<StaticSpot>().plane = "front";
+				break;
+			case "middle":
+				static_pt.GetComponent<StaticSpot>().plane = "middle";
+				break;
+			case "back":
+				static_pt.GetComponent<StaticSpot>().plane = "back";
+				break;
+		}
+
+			static_pt.localPosition = new Vector3 (coords_temp.x, coords_temp.y, coords_temp.z); // Spawn position relative to parent
+		}
+
+		/* Spawn new plane's intial trigger point */
+		coords_temp = coOrds_collection[order[plane]] [itr];
+		Transform trigger = Instantiate (trigger_point, new Vector3 (coords_temp.x, coords_temp.y, coords_temp.z), Quaternion.identity, this.transform); // Make this gameObject the parent
+		trigger.localPosition = new Vector3 (coords_temp.x, coords_temp.y, coords_temp.z); // Spawn position relative to parent
+		itr++;
+	}
+
+	/* Spawn trigger points until 3 trials are completed */
 	public void HotSpotTriggerInstantiate ()
 	{
-		/* check if user has tapped first point */
+		CoOrds coords_temp = new CoOrds ();
+
+		/* Check if user has tapped first point */
 		if (itr == 1) {
+
 			// Begin trial timing
 			stopwatch.Start();
 		}
-
-		CoOrds coords_temp = new CoOrds ();
-
+		
 		/* Begin spawning */
-		if (trial < 3 && itr != coOrds_collection[order[trial]].Count) {
+		if (plane < 3 && itr != coOrds_collection[order[plane]].Count) {
 
 			/* Spawn the trigger point */ 
-			coords_temp = coOrds_collection[order[trial]] [itr];
+			coords_temp = coOrds_collection[order[plane]] [itr];
 			Transform trigger = Instantiate (trigger_point, new Vector3 (coords_temp.x, coords_temp.y, coords_temp.z), Quaternion.identity, this.transform); // Make this gameObject the parent
 			trigger.localPosition = new Vector3 (coords_temp.x, coords_temp.y, coords_temp.z); // Spawn position relative to parent
 			itr++;
 		}
 
-		/* Spawn new plane and counter */
-		else if (++trial < 3) {
+		/* Spawn new plane */
+		else if (++plane < 3) {
 
 			// Stop timing
 			System.TimeSpan ts = stopwatch.Elapsed;
 			stopwatch.Stop();
-			UnityEngine.Debug.Log("Time elapsed: " + ts + " " + GameObject.Find("static_point(Clone)").GetComponent<StaticSpot>().plane);
+			UnityEngine.Debug.Log("Plane " + plane + " : " + ts + " " + GameObject.Find("static_point(Clone)").GetComponent<StaticSpot>().plane);
 			stopwatch.Reset();
 
 			// Write time to file
-			File.AppendAllText(@path, "Trial " + trial + " : ");
+			File.AppendAllText(@path, "Plane " + plane + " : ");
 			File.AppendAllText(@path, ts.ToString() + " " + GameObject.Find("static_point(Clone)").GetComponent<StaticSpot>().plane);
 			File.AppendAllText(@path, "\r\n");
 
-			itr = 0;
-
-			/* Spawn trial counter */
-			coords_temp = counter_collection [trial - 1];
-			Instantiate (trial_counter, new Vector3 (coords_temp.x, coords_temp.y, coords_temp.z), Quaternion.identity);
-
-			/* Destroy completed plane */ 
-			GameObject[] completed = GameObject.FindGameObjectsWithTag ("static_sphere");
-
-			for (var i = 0; i < completed.Length; i++) {
-				Destroy(completed[i]);
-			}
-
-			/* Spawn new plane's static points */
-			for (int i = 0; i < coOrds_collection[order[trial]].Count; i++) {
-				coords_temp = coOrds_collection[order[trial]] [i];
-				Transform static_pt = Instantiate (static_point, new Vector3 (coords_temp.x, coords_temp.y, coords_temp.z), Quaternion.identity, this.transform); // Make this gameObject the parent
-
-			switch (coords_temp.plane) {
-				case "front":
-					static_pt.GetComponent<StaticSpot>().plane = "front";
-					break;
-				case "middle":
-					static_pt.GetComponent<StaticSpot>().plane = "middle";
-					break;
-				case "back":
-					static_pt.GetComponent<StaticSpot>().plane = "back";
-					break;
-			}
-
-				static_pt.localPosition = new Vector3 (coords_temp.x, coords_temp.y, coords_temp.z); // Spawn position relative to parent
-			}
-
-			/* Spawn new plane's intial trigger point */
-			coords_temp = coOrds_collection[order[trial]] [itr];
-			Transform trigger = Instantiate (trigger_point, new Vector3 (coords_temp.x, coords_temp.y, coords_temp.z), Quaternion.identity, this.transform); // Make this gameObject the parent
-			trigger.localPosition = new Vector3 (coords_temp.x, coords_temp.y, coords_temp.z); // Spawn position relative to parent
-			itr++;
+			newPlane();
 		}
 
-		/* Spawn last trial counter */
-		else {
+		/* Reset planes and spawn trial counter */
+		else if (trial < 3) {
+
 			// Stop timing
 			System.TimeSpan ts = stopwatch.Elapsed;
 			stopwatch.Stop();
-			UnityEngine.Debug.Log("Time elapsed: " + ts + " " + GameObject.Find("static_point(Clone)").GetComponent<StaticSpot>().plane);
+			UnityEngine.Debug.Log("Plane " + plane + " : " + ts + " " + GameObject.Find("static_point(Clone)").GetComponent<StaticSpot>().plane);
 			stopwatch.Reset();
 
 			// Write time to file
-			File.AppendAllText(@path, "Trial " + trial + " : ");
+			File.AppendAllText(@path, "Plane " + plane + " : ");
 			File.AppendAllText(@path, ts.ToString() + " " + GameObject.Find("static_point(Clone)").GetComponent<StaticSpot>().plane);
 			File.AppendAllText(@path, "\r\n");
 
-			UnityEngine.Debug.Log("All trials completed!");
+			// Spawn trial counter
+			trial++;
+			UnityEngine.Debug.Log("Trial " + trial + " completed!");
 			coords_temp = counter_collection [trial - 1];
 			Instantiate (trial_counter, new Vector3 (coords_temp.x, coords_temp.y, coords_temp.z), Quaternion.identity);
+
+			// Reset trial
+			if (trial < 3) {
+				//TODO shuffle planes before new trial
+				plane = 0;
+				newPlane();
+			}
+
 		}
 
 	}
