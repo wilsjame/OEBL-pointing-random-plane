@@ -45,13 +45,10 @@ public class SpawnHotspots : MonoBehaviour {
 	public string fileName = "pointing_random_plane_task_time_";
 	public string path;
 
-	public Stopwatch stopwatch = new Stopwatch();
-	/*
+	public Stopwatch trial_stopwatch = new Stopwatch();
+	public Stopwatch plane_stopwatch = new Stopwatch();
 	public System.TimeSpan trial_time;
-	public System.TimeSpan plane_1_time;
-	public System.TimeSpan plane_2_time;
-	public System.TimeSpan plane_3_time;
-	*/
+	public System.TimeSpan plane_time;
 	
 	/* Use this for initialization */
 	void Start () {
@@ -198,17 +195,17 @@ public class SpawnHotspots : MonoBehaviour {
 			coords_temp = coOrds_collection[order[plane]] [i];
 			Transform static_pt = Instantiate (static_point, new Vector3 (coords_temp.x, coords_temp.y, coords_temp.z), Quaternion.identity, this.transform); // Make this gameObject the parent
 
-		switch (coords_temp.plane) {
-			case "front":
-				static_pt.GetComponent<StaticSpot>().plane = "front";
-				break;
-			case "middle":
-				static_pt.GetComponent<StaticSpot>().plane = "middle";
-				break;
-			case "back":
-				static_pt.GetComponent<StaticSpot>().plane = "back";
-				break;
-		}
+			switch (coords_temp.plane) {
+				case "front":
+					static_pt.GetComponent<StaticSpot>().plane = "front";
+					break;
+				case "middle":
+					static_pt.GetComponent<StaticSpot>().plane = "middle";
+					break;
+				case "back":
+					static_pt.GetComponent<StaticSpot>().plane = "back";
+					break;
+			}
 
 			static_pt.localPosition = new Vector3 (coords_temp.x, coords_temp.y, coords_temp.z); // Spawn position relative to parent
 		}
@@ -226,10 +223,11 @@ public class SpawnHotspots : MonoBehaviour {
 		CoOrds coords_temp = new CoOrds ();
 
 		/* Check if user has tapped first point */
-		if (itr == 1) {
+		if (itr == 1 && plane == 0 && trial == 0) {
 
-			// Begin trial timing
-			stopwatch.Start();
+			// Start timers
+			trial_stopwatch.Start();
+			plane_stopwatch.Start();
 		}
 		
 		/* Begin spawning */
@@ -241,36 +239,35 @@ public class SpawnHotspots : MonoBehaviour {
 			trigger.localPosition = new Vector3 (coords_temp.x, coords_temp.y, coords_temp.z); // Spawn position relative to parent
 			itr++;
 		}
-
 		/* Spawn new plane */
 		else if (++plane < 3) {
+			newPlane();
 
-			// Stop timing
-			System.TimeSpan ts = stopwatch.Elapsed;
-			stopwatch.Stop();
-			UnityEngine.Debug.Log("Plane " + plane + " : " + ts + " " + GameObject.Find("static_point(Clone)").GetComponent<StaticSpot>().plane);
-			stopwatch.Reset();
+			// Stop plane timing
+			plane_time = plane_stopwatch.Elapsed;
+			plane_stopwatch.Stop();
+			UnityEngine.Debug.Log("Plane " + plane + " : " + plane_time + " " + GameObject.Find("static_point(Clone)").GetComponent<StaticSpot>().plane);
+			plane_stopwatch.Reset();
 
-			// Write time to file
+			// Write plane time to file
 			File.AppendAllText(@path, "Plane " + plane + " : ");
-			File.AppendAllText(@path, ts.ToString() + " " + GameObject.Find("static_point(Clone)").GetComponent<StaticSpot>().plane);
+			File.AppendAllText(@path, plane_time.ToString() + " " + GameObject.Find("static_point(Clone)").GetComponent<StaticSpot>().plane);
 			File.AppendAllText(@path, "\r\n");
 
-			newPlane();
+			plane_stopwatch.Start();
 		}
-
-		/* Reset planes and spawn trial counter */
+		/* Start new trial and spawn counter */
 		else if (trial < 3) {
 
-			// Stop timing
-			System.TimeSpan ts = stopwatch.Elapsed;
-			stopwatch.Stop();
-			UnityEngine.Debug.Log("Plane " + plane + " : " + ts + " " + GameObject.Find("static_point(Clone)").GetComponent<StaticSpot>().plane);
-			stopwatch.Reset();
+			// Stop plane timing
+			System.TimeSpan plane_time = plane_stopwatch.Elapsed;
+			plane_stopwatch.Stop();
+			UnityEngine.Debug.Log("Plane " + plane + " : " + plane_time + " " + GameObject.Find("static_point(Clone)").GetComponent<StaticSpot>().plane);
+			plane_stopwatch.Reset();
 
-			// Write time to file
+			// Write plane time to file
 			File.AppendAllText(@path, "Plane " + plane + " : ");
-			File.AppendAllText(@path, ts.ToString() + " " + GameObject.Find("static_point(Clone)").GetComponent<StaticSpot>().plane);
+			File.AppendAllText(@path, plane_time.ToString() + " " + GameObject.Find("static_point(Clone)").GetComponent<StaticSpot>().plane);
 			File.AppendAllText(@path, "\r\n");
 
 			// Spawn trial counter
@@ -279,11 +276,27 @@ public class SpawnHotspots : MonoBehaviour {
 			coords_temp = counter_collection [trial - 1];
 			Instantiate (trial_counter, new Vector3 (coords_temp.x, coords_temp.y, coords_temp.z), Quaternion.identity);
 
-			// Reset trial
+			// Stop trial timing
+			System.TimeSpan trial_time = trial_stopwatch.Elapsed;
+			trial_stopwatch.Stop();
+			UnityEngine.Debug.Log("Trial " + trial + " : " + trial_time);
+			trial_stopwatch.Reset();
+
+			// Write trial time to file
+			File.AppendAllText(@path, "Trial " + trial + " : ");
+			File.AppendAllText(@path, trial_time.ToString());
+			File.AppendAllText(@path, "\r\n");
+
+			// Do not time after third trial
 			if (trial < 3) {
 				//TODO shuffle planes before new trial
 				plane = 0;
 				newPlane();
+				trial_stopwatch.Start();
+				plane_stopwatch.Start();
+			}
+			else {
+				UnityEngine.Debug.Log("END");
 			}
 
 		}
