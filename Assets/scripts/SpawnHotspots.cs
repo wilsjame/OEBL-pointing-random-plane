@@ -226,10 +226,15 @@ public class SpawnHotspots : MonoBehaviour {
 		CoOrds coords_temp = new CoOrds ();
 
 		/* Check if user has tapped first point */
-		if (itr == 1 && plane == 0 && trial == 0) {
+		if (itr == 1 && plane == 0) {
 
 			// Start timers
 			trial_stopwatch.Start();
+			plane_stopwatch.Start();
+		}
+		else if (itr == 1) {
+
+			// Start each plane timer when the plane's first trigger point is activated
 			plane_stopwatch.Start();
 		}
 		
@@ -256,8 +261,6 @@ public class SpawnHotspots : MonoBehaviour {
 			File.AppendAllText(@path, "Plane " + plane + " : ");
 			File.AppendAllText(@path, plane_time.ToString() + " " + GameObject.Find("static_point(Clone)").GetComponent<StaticSpot>().plane);
 			File.AppendAllText(@path, "\r\n");
-
-			plane_stopwatch.Start();
 		}
 		/* Start new trial and spawn counter */
 		else if (trial < 3) {
@@ -305,8 +308,6 @@ public class SpawnHotspots : MonoBehaviour {
 				
 				plane = 0;
 				newPlane();
-				trial_stopwatch.Start();
-				plane_stopwatch.Start();
 			}
 			else {
 				UnityEngine.Debug.Log("END");
